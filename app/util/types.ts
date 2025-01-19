@@ -44,7 +44,6 @@ export type CFAPIResponse = {
 	points: number;
 	penalty: number;
 	username: string;
-	absent: boolean;
 };
 
 type ModifiedCFResponse = {
