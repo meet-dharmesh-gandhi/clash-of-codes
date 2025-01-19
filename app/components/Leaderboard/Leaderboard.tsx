@@ -1,4 +1,4 @@
-import { fullForm } from "@/app/util/functions";
+import { fullForm, getServerUrl } from "@/app/util/functions";
 import {
 	CFAPIResponse,
 	CFAPIResponseWithRating,
@@ -16,6 +16,7 @@ import Counter from "../Counter/Counter";
 import SpecialTxt from "../SpecialTxt";
 
 import styles from "./Leaderboard.module.css";
+import useSWR from "swr";
 
 function Scorecard({
 	team1,
@@ -212,6 +213,8 @@ export default function Leaderboard({ fetchedData, mode }: BoardProps) {
 
 	const leftClan = fetchedData[leftClanName];
 	const rightClan = fetchedData[rightClanName];
+	let leftAbsent = 0;
+	let rightAbsent = 0;
 
 	let rating1 = 0;
 	let rating2 = 0;
@@ -220,19 +223,23 @@ export default function Leaderboard({ fetchedData, mode }: BoardProps) {
 
 	if (mode == "Past") {
 		leftClan?.forEach((entry: CFAPIResponseWithRating) => {
+			if (entry.absent) leftAbsent++;
 			rating1 += entry.rating;
 			points1 += entry.points;
 		});
 		rightClan?.forEach((entry: CFAPIResponseWithRating) => {
+			if (entry.absent) rightAbsent++;
 			rating2 += entry.rating;
 			points2 += entry.points;
 		});
 	} else {
 		leftClan?.forEach((entry: CFAPIResponse) => {
+			if (entry.absent) leftAbsent++;
 			rating1 += entry.penalty;
 			points1 += entry.points;
 		});
 		rightClan?.forEach((entry: CFAPIResponse) => {
+			if (entry.absent) rightAbsent++;
 			rating2 += entry.penalty;
 			points2 += entry.points;
 		});
@@ -288,7 +295,7 @@ export default function Leaderboard({ fetchedData, mode }: BoardProps) {
 					{entries1}
 
 					<LeaderboardEntryFooter
-						totalScore={rating1}
+						totalScore={calculateNewScores(rating1, leftAbsent)}
 						side="LeftSide"
 						mode={mode}
 						totalPoints={points1}
@@ -301,7 +308,7 @@ export default function Leaderboard({ fetchedData, mode }: BoardProps) {
 					{entries2}
 					<LeaderboardEntryFooter
 						totalPoints={points2}
-						totalScore={rating2}
+						totalScore={calculateNewScores(rating2, rightAbsent)}
 						side="RightSide"
 						mode={mode}
 					/>
@@ -309,4 +316,15 @@ export default function Leaderboard({ fetchedData, mode }: BoardProps) {
 			</div>
 		</div>
 	);
+}
+
+function calculateNewScores(
+	rawScore: number,
+	absentParticipants: number,
+	totalParticipants: number = 5
+) {
+	const newScore =
+		rawScore * (5 / (totalParticipants - absentParticipants)) -
+		50 * absentParticipants;
+	return newScore;
 }
